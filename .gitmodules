@@ -1,6 +1,6 @@
 [submodule "api"]
 	path = api
-	url = https://github.com/AI-Hub-Growth/lago-api.git
+	url = https://github.com/123chunxiao/lago-api.git
 [submodule "front"]
 	path = front
-	url = https://github.com/AI-Hub-Growth/lago-front.git
+	url = https://github.com/123chunxiao/lago-front.git

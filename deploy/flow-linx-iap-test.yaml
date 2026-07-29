@@ -1,0 +1,58 @@
+sources:
+  lago_repo:
+    type: git
+    name: Lago Fork
+    endpoint: https://github.com/123chunxiao/lago.git
+    branch: feat/apple-iap-paid-voice-clone
+    branchesFilter: ^feat/apple-iap-paid-voice-clone$
+    cloneDepth: "1"
+    submodule: "true"
+defaultWorkspace: lago_repo
+stages:
+  build_stage:
+    name: Build Linx IAP Test Images
+    jobs:
+      api_image_job:
+        name: Build Linx IAP Test Lago API
+        sourceOption: [lago_repo]
+        runsOn:
+          group: public/cn-beijing
+          container: build-steps-public-registry.cn-beijing.cr.aliyuncs.com/build-steps/alinux3:latest
+        steps:
+          build_api_image:
+            name: Build and Push API
+            step: DockerBuildPushACREE
+            with:
+              serviceConnection: k5q8u6ottn8u7mxa
+              artifact: lago_linx_iap_test_api
+              region: cn-hangzhou
+              instance: lincanvas
+              namespace: lago-linx-iap-test
+              dockerRegistry: lago-api
+              dockerTag: ${CI_COMMIT_ID}
+              dockerfilePath: api/Dockerfile
+              contextPath: api
+              cacheType: no-cache
+              options: --platform linux/amd64
+      front_image_job:
+        name: Build Linx IAP Test Lago Front
+        sourceOption: [lago_repo]
+        runsOn:
+          group: public/cn-beijing
+          container: build-steps-public-registry.cn-beijing.cr.aliyuncs.com/build-steps/alinux3:latest
+        steps:
+          build_front_image:
+            name: Build and Push Front
+            step: DockerBuildPushACREE
+            with:
+              serviceConnection: k5q8u6ottn8u7mxa
+              artifact: lago_linx_iap_test_front
+              region: cn-hangzhou
+              instance: lincanvas
+              namespace: lago-linx-iap-test
+              dockerRegistry: lago-front
+              dockerTag: ${CI_COMMIT_ID}
+              dockerfilePath: front/Dockerfile
+              contextPath: front
+              cacheType: no-cache
+              options: --platform linux/amd64

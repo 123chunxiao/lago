@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: lago-migrate-${IMAGE_TAG}
+  namespace: lago-linx-iap-test
+  labels:
+    app.kubernetes.io/name: lago-migrate
+    app.kubernetes.io/part-of: lago
+    app.kubernetes.io/instance: lago-linx-iap-test
+    environment: test
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: lago-migrate
+        app.kubernetes.io/part-of: lago
+        app.kubernetes.io/instance: lago-linx-iap-test
+        environment: test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: ${API_IMAGE}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/opt/lago-deploy/migrate-rds.sh"]
+          envFrom:
+            - configMapRef:
+                name: lago-env
+            - secretRef:
+                name: lago-runtime
+            - secretRef:
+                name: lago-connections
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          volumeMounts:
+            - name: migrate-script
+              mountPath: /opt/lago-deploy
+              readOnly: true
+      volumes:
+        - name: migrate-script
+          configMap:
+            name: lago-migrate-script
+            defaultMode: 0555

@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lago-env
+  labels:
+    app.kubernetes.io/instance: lago-linx-iap-test
+    environment: test
+data:
+  RAILS_ENV: production
+  RAILS_LOG_TO_STDOUT: "true"
+  LAGO_LOG_LEVEL: info
+  LAGO_API_URL: https://${LAGO_TEST_DOMAIN}/api
+  LAGO_FRONT_URL: https://${LAGO_TEST_DOMAIN}
+  LAGO_PDF_URL: http://lago-pdf:3000
+  LAGO_DISABLE_SIGNUP: "false"
+  LAGO_DISABLE_SEGMENT: "true"
+  LAGO_DISABLE_PDF_GENERATION: "false"
+  LAGO_SIDEKIQ_WEB: "false"
+  LAGO_UNLOCK_PREMIUM_FEATURES: "true"
+  LAGO_UNLOCK_DATA_API_FEATURES: "false"
+  LAGO_WEBHOOK_ATTEMPTS: "3"
+  SIDEKIQ_CONCURRENCY: "5"
+  LAGO_USE_AWS_S3: "true"
+  LAGO_AWS_S3_ENDPOINT: https://s3.cn-east-1.qiniucs.com
+  LAGO_AWS_S3_REGION: cn-east-1
+  LAGO_AWS_S3_BUCKET: lincanvas
+  LAGO_AWS_S3_PATH_STYLE: "true"
+  LAGO_SKIP_PG_PARTMAN: "true"
+  APPLE_ROOT_CA_PATHS: /run/secrets/apple-root-ca-g3.pem
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lago-front-env
+  labels:
+    app.kubernetes.io/instance: lago-linx-iap-test
+    environment: test
+data:
+  API_URL: https://${LAGO_TEST_DOMAIN}
+  APP_ENV: production
+  LAGO_DISABLE_PDF_GENERATION: "false"
+  LAGO_OAUTH_PROXY_URL: https://proxy.getlago.com

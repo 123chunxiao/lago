@@ -1,0 +1,89 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lago-linx-iap-test
+
+resources:
+  - ../../kubernetes
+  - configmaps.yaml
+  - quota.yaml
+
+images:
+  - name: ${API_IMAGE}
+    newName: lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lago-linx-iap-test/lago-api
+    newTag: ${IMAGE_TAG}
+  - name: ${FRONT_IMAGE}
+    newName: lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lago-linx-iap-test/lago-front
+    newTag: ${IMAGE_TAG}
+
+patches:
+  - target:
+      kind: Namespace
+      name: lago
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: lago-linx-iap-test
+      - op: add
+        path: /metadata/labels
+        value:
+          app.kubernetes.io/part-of: lago
+          app.kubernetes.io/instance: lago-linx-iap-test
+          environment: test
+  - target:
+      kind: Ingress
+      name: lago
+    patch: |-
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: ${LAGO_TEST_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/secretName
+        value: ${LAGO_TEST_TLS_SECRET}
+      - op: replace
+        path: /spec/rules/0/host
+        value: ${LAGO_TEST_DOMAIN}
+  - target:
+      kind: Deployment
+      name: lago-api
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/topologySpreadConstraints/0/whenUnsatisfiable
+        value: ScheduleAnyway
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts
+        value:
+          - name: apple-root-ca
+            mountPath: /run/secrets/apple-root-ca-g3.pem
+            subPath: apple-root-ca-g3.pem
+            readOnly: true
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: apple-root-ca
+            secret:
+              secretName: lago-apple-root-ca
+  - target:
+      kind: Deployment
+      name: lago-worker
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts
+        value:
+          - name: apple-root-ca
+            mountPath: /run/secrets/apple-root-ca-g3.pem
+            subPath: apple-root-ca-g3.pem
+            readOnly: true
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: apple-root-ca
+            secret:
+              secretName: lago-apple-root-ca
+  - target:
+      kind: Deployment
+      name: lago-front
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/topologySpreadConstraints/0/whenUnsatisfiable
+        value: ScheduleAnyway
