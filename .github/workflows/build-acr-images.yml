@@ -1,0 +1,94 @@
+name: Build Lago Images to ACR
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/apple-iap-paid-voice-clone
+    paths:
+      - .github/workflows/build-acr-images.yml
+      - api
+      - front
+
+concurrency:
+  group: acr-images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  ACR_REGISTRY: ${{ vars.ACR_REGISTRY }}
+  ACR_NAMESPACE: ${{ vars.ACR_NAMESPACE }}
+
+jobs:
+  validate:
+    name: Validate ACR configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check repository variables and secrets
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          test -n "$ACR_REGISTRY" || { echo "::error::Missing repository variable ACR_REGISTRY"; exit 1; }
+          test -n "$ACR_NAMESPACE" || { echo "::error::Missing repository variable ACR_NAMESPACE"; exit 1; }
+          test -n "$ACR_USERNAME" || { echo "::error::Missing repository secret ACR_USERNAME"; exit 1; }
+          test -n "$ACR_PASSWORD" || { echo "::error::Missing repository secret ACR_PASSWORD"; exit 1; }
+
+  build:
+    name: Build ${{ matrix.image }}
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: lago-api
+            context: api
+          - image: lago-front
+            context: front
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Alibaba Cloud ACR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push ${{ matrix.image }}
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.context }}
+          file: ./${{ matrix.context }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          provenance: false
+          tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}-amd64
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}-amd64
+
+      - name: Publish image summary
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo
+            echo '```text'
+            echo "${ACR_REGISTRY}/${ACR_NAMESPACE}/${{ matrix.image }}:${GITHUB_SHA}"
+            echo '```'
+            echo
+            echo "Digest: \`${{ steps.build.outputs.digest }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
