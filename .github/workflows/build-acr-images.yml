@@ -74,6 +74,8 @@ jobs:
           platforms: linux/amd64
           push: true
           provenance: false
+          build-args: |
+            APP_VERSION=${{ github.sha }}
           tags: ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/${{ matrix.image }}:${{ github.sha }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
