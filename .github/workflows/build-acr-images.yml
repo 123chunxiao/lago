@@ -2,11 +2,19 @@ name: Build Lago Images to ACR
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: Image target to build
+        required: true
+        default: front
+        type: choice
+        options:
+          - front
+          - all
   push:
     branches:
       - feat/apple-iap-paid-voice-clone
     paths:
-      - .github/workflows/build-acr-images.yml
       - api
       - front
 
@@ -39,6 +47,7 @@ jobs:
   build:
     name: Build ${{ matrix.image }}
     needs: validate
+    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || matrix.image == 'lago-front'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -54,6 +63,15 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Prepare public frontend base images
+        if: matrix.image == 'lago-front'
+        run: |
+          sed -i \
+            -e '1c # syntax=docker/dockerfile:1' \
+            -e 's#lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lincanvas/node:#node:#g' \
+            -e 's#lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lincanvas/nginx:#nginx:#g' \
+            front/Dockerfile
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
