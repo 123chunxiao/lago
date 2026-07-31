@@ -47,16 +47,11 @@ jobs:
   build:
     name: Build ${{ matrix.image }}
     needs: validate
-    if: github.event_name != 'workflow_dispatch' || inputs.target == 'all' || matrix.image == 'lago-front'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: lago-api
-            context: api
-          - image: lago-front
-            context: front
+        include: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.target == 'front' && '[{"image":"lago-front","context":"front"}]' || '[{"image":"lago-api","context":"api"},{"image":"lago-front","context":"front"}]') }}
 
     steps:
       - name: Checkout repository and submodules
