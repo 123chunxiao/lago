@@ -10,6 +10,7 @@ on:
         type: choice
         options:
           - front
+          - api
           - all
   push:
     branches:
@@ -51,7 +52,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.target == 'front' && '[{"image":"lago-front","context":"front"}]' || '[{"image":"lago-api","context":"api"},{"image":"lago-front","context":"front"}]') }}
+        include: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.target == 'front' && '[{"image":"lago-front","context":"front"}]' || github.event_name == 'workflow_dispatch' && inputs.target == 'api' && '[{"image":"lago-api","context":"api"}]' || '[{"image":"lago-api","context":"api"},{"image":"lago-front","context":"front"}]') }}
 
     steps:
       - name: Checkout repository and submodules
