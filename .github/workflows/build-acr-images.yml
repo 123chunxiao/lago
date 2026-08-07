@@ -60,6 +60,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Prepare public API build dependencies
+        if: matrix.image == 'lago-api'
+        run: |
+          sed -i \
+            -e '1c # syntax=docker/dockerfile:1' \
+            -e 's#lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lincanvas/golang:#golang:#g' \
+            -e 's#lincanvas-registry.cn-hangzhou.cr.aliyuncs.com/lincanvas/ruby:#ruby:#g' \
+            api/Dockerfile
+          sed -i \
+            "/^RUN gem sources --remove/,/bundle config set --global mirror/c\\RUN gem install bundler --no-document -v '4.0.4'" \
+            api/Dockerfile
+
       - name: Prepare public frontend base images
         if: matrix.image == 'lago-front'
         run: |
